@@ -1,9 +1,9 @@
 const Sequelize = require('sequelize');
 const db = require('../connection');
-const { Product, OrderProduct } = require('../index');
 
 const PENDING = 'PENDING';
 const COMPLETE = 'COMPLETE';
+
 const Order = db.define('order', {
   id: {
     type: Sequelize.UUID,
@@ -24,53 +24,57 @@ const Order = db.define('order', {
   },
 });
 
-Order.addUpdateCart = async function (orderProducts, userId) {
+Order.addUpdateCart = async function(orderProducts, userId) {
   try {
-    const [order, wasCreated] = await Order.findOrCreate({where: {userId, status: PENDING} });
+    const [order] = await Order.findOrCreate({where: {userId, status: PENDING} });
 
     let tempOrderTotal = order.orderTotal;
 
-    orderProducts.orderProducts.forEach(async (productObj) => {
-      console.log('productObj:', productObj);
-      try {
-        const { product, quantity } = productObj;
-        console.log('product:', product);
-        console.log('quantity:', quantity);
-        // get price from db instead of trusting the price contained in client request
-        tempOrderTotal += Product.findByPk(product.id).get('price');
+    const productObj = orderProducts[0];
 
-        // if order existed, check if product already exists in cart
-        if (!wasCreated) {
-          const orderHasProduct = order.hasProduct(product);
+    const { product, quantity } = productObj;
+    const Product = db.models.product;
+    const OrderProduct = db.models.orderProduct;
 
-          // if it already has the product, update the quantity
-          if (orderHasProduct) {
-            const joinRow = await OrderProduct.findOne({
-              where: {
-                orderId: order.id,
-                productId: product.id,
-              }
-            });
-            await joinRow.update({
-              productQuantity: joinRow.productQuantity + quantity,
-            });
-          }
-        } else { // else add the product to the order
-          await order.addProduct(product, { productQuantity: quantity });
-        }
-        } catch (error) {
-          throw new Error('Error updating cart:', error);
-        }
-    })
+    // get price from db instead of trusting the price contained in client request
+    const foundProduct = await Product.findByPk(product.id)
+    let price = foundProduct.price;
+    tempOrderTotal += price;
+
+    // if product exists in cart, update quantity. else add product
+    const [joinRow] = await OrderProduct.findOrCreate({where: {orderId: order.id, productId: foundProduct.id}});
+    await joinRow.update({
+      productQuantity: joinRow.productQuantity + quantity,
+    });
 
     // in either case, update the order total
     const updatedOrder = await order.update({ orderTotal: tempOrderTotal });
-
     return updatedOrder;
 
   } catch (error) {
-    throw new Error('Error updating cart:', error);
+    console.error(error);
   } 
+}
+
+Order.checkout = async function (orderDetails) {
+  try {
+    const { order, user } = orderDetails;
+    const { addressLine1, city, state, zipCode } = user;
+    const foundOrder = Order.findOne({where: {id: order.id}});
+    
+    const products = await foundOrder.getProducts();
+    if (!products.length) {
+      console.error('Cannot checkout with an empty cart');
+    } else if (!(addressLine1 || city || state || zipCode)) {
+      console.error('Cannot checkout without an address');
+    }
+      else {
+        const completeOrder = await foundOrder.update({status: COMPLETE});
+        return completeOrder;
+      }
+    } catch (error) {
+        console.error(error);
+  }
 }
 
 module.exports = Order;

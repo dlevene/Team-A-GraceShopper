@@ -10,24 +10,35 @@ router.get('/', async (req, res) => {
       ],
     });
     res.json(orders);
-  } catch (e) {
-    console.error(e);
-  }
-});
-
-// POST API/orders
-router.post('/', async (req, res) => {
-  try {
-    const { addUpdateCart } = Order;
-    const { orderProducts } = req.body;
-    const userId = req.session.userId;
-    const order = await addUpdateCart(orderProducts, userId);
-    res.sendStatus(200).send('Order posted successfully:', order);
   } catch (error) {
     console.error(error);
   }
 });
 
+// POST API/orders
+router.post('/', async (req, res, next) => {
+  try {
+    const orderProducts = req.body.orderProducts;
+    const userId = req.session.userId;
+    const order = await Order.addUpdateCart(orderProducts, userId);
+    res.json(order);
+    console.log('Order updated successfully:', order.id, 'Total:', order.orderTotal);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// POST API/orders/checkout
+router.post('/checkout', async (req, res, next) => {
+  try {
+    const orderDetails = req.body.order;
+    const order = await Order.checkout(orderDetails);
+    res.json(order);
+    console.log('Checkout successful:', order.id, 'Status:', order.status);
+  } catch (error) {
+    console.error(error);
+  }
+});
 // /api/orders/:id (specific order, which includes products)
 // router.get('/orders/:id', async (req, res) => {
 //   try {
@@ -71,41 +82,22 @@ router.post('/', async (req, res) => {
 // });
 
 // /api/users/:id/orders/:id (specific order of a user, which includes products)
-router.get('/users/:id/orders/:orderId', async (req, res) => {
-  try {
-    const user = await User.findByPk(req.params.id);
-    const orders = await user.getOrders();
-    const order = orders.filter(_order => _order.id === req.params.orderId)[0];
-    res.json(order);
-  } catch (e) {
-    console.log(e =>
-      console.error(
-        `Could not get User:${req.params.id}'s Order:${req.params.userId} from database`,
-        e
-      )
-    );
-    res.sendStatus(500);
-  }
-});
-
-// API/orders
-router.post('/orders', async (req, res, next) => {
-  try {
-    const { user, session, orderTotal, products } = req.body;
-    const order = await Order.create({ user, session, orderTotal });
-    const orderProducts = await products.map(product => {
-      return OrderProduct.create({
-        productId: product.id,
-        productQuantity: product.productQuantity,
-      });
-    });
-    orderProducts.map(orderProduct =>
-      orderProduct.update({ orderId: order.id })
-    );
-  } catch (error) {
-    console.error(error);
-  }
-});
+// router.get('/users/:id/orders/:orderId', async (req, res) => {
+//   try {
+//     const user = await User.findByPk(req.params.id);
+//     const orders = await user.getOrders();
+//     const order = orders.filter(_order => _order.id === req.params.orderId)[0];
+//     res.json(order);
+//   } catch (e) {
+//     console.log(e =>
+//       console.error(
+//         `Could not get User:${req.params.id}'s Order:${req.params.userId} from database`,
+//         e
+//       )
+//     );
+//     res.status(500);
+//   }
+// });
 
 //post routes
 
