@@ -20,19 +20,19 @@ router.post('/', async (req, res, next) => {
   try {
     const orderProducts = req.body.orderProducts;
     const userId = req.session.userId;
-    const order = await Order.addUpdateCart(orderProducts, userId);
-    res.json(order);
-    console.log('Order updated successfully:', order.id, 'Total:', order.orderTotal);
+    const cart = await Order.addUpdateCart(orderProducts, userId);
+    res.json(cart);
+    console.log('Order updated successfully:', cart.order.id, 'Total:', cart.order.orderTotal);
   } catch (error) {
     console.error(error);
   }
 });
 
 // POST API/orders/checkout
-router.post('/checkout', async (req, res, next) => {
+router.post('/checkout/:id', async (req, res, next) => {
   try {
-    const orderDetails = req.body.order;
-    const order = await Order.checkout(orderDetails);
+    const id = req.params.id;
+    const order = await Order.checkout(id);
     res.json(order);
     console.log('Checkout successful:', order.id, 'Status:', order.status);
   } catch (error) {

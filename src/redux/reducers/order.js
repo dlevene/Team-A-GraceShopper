@@ -5,6 +5,7 @@ const ORDER_REQUEST = 'ORDER_REQUEST';
 const ORDER_REQUEST_FAILURE = 'ORDER_REQUEST_FAILURE';
 const GET_ORDER = 'GET_ORDER';
 const GET_ORDERS = 'GET_ORDERS';
+const CHECKOUT = 'CHECKOUT';
 
 // Action Creators
 const fetchingOrderData = () => ({
@@ -17,10 +18,10 @@ const fetchingOrderDataError = error => ({
     payload: error,
 });
 
-const getOrder = (order, status = null) => ({
+const getOrder = (order) => ({
     type: GET_ORDER,
 		order,
-		status,
+		status: order.status,
   });
 
 const getOrders = (orders, status = null) => ({
@@ -28,6 +29,11 @@ const getOrders = (orders, status = null) => ({
 		orders,
 		status,
 });
+
+const postCheckout = (orderDetails) => ({
+  type: CHECKOUT,
+  orderDetails,
+})
 
 // Thunks
 export const postOrder = order => dispatch => {
@@ -62,6 +68,16 @@ export const fetchOrder = (order, user) => dispatch => {
 			.catch(error => dispatch(fetchingOrderDataError(error)));
 };
 
+export const checkout = (orderDetails) => dispatch => {
+  const { order } = orderDetails;
+  axios
+  .post(`/api/orders/checkout/${order.id}`, orderDetails)
+  .then(({ data }) => {
+    dispatch(postCheckout(data));
+  })
+  .catch(error => console.log(error))
+}
+
 // Reducers
 const initialState = {
     orders: [],
@@ -86,7 +102,9 @@ const orders = (state = initialState, action) => {
 					return { ...state, cart: action.order, isFetching: false };
 				} else {
 					return { ...state, order: action.order, isFetching: false };
-					}
+          }
+      case CHECKOUT:
+        return {...state, cart: {}};
       default:
         return state;
     }

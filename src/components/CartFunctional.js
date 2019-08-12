@@ -42,7 +42,7 @@ const useStyles = makeStyles(theme => ({
 
 const CartFunctional = props => {
   const classes = useStyles();
-  const { cart } = props.cart;
+  const { cart, checkout } = props;
   return cart.length ? (
     cart.map(cartItem => {
       const { supplier, category } = cartItem;

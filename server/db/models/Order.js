@@ -49,18 +49,25 @@ Order.addUpdateCart = async function(orderProducts, userId) {
 
     // in either case, update the order total
     const updatedOrder = await order.update({ orderTotal: tempOrderTotal });
-    return updatedOrder;
+
+    const orderProducts = await OrderProduct.findAll({where: {orderId: updatedOrder.id}});
+    const cartLen = orderProducts.length;
+    let cart = {};
+    cart.orderProducts = orderProducts;
+    cart.cartLen = cartLen;
+    return cart;
 
   } catch (error) {
     console.error(error);
   } 
 }
 
-Order.checkout = async function (orderDetails) {
+Order.checkout = async function (id) {
   try {
-    const { order, user } = orderDetails;
+    const User = db.models.user;
+    const foundOrder = Order.findOne({where: {id}, include: [User]});
+    const { user } = foundOrder;
     const { addressLine1, city, state, zipCode } = user;
-    const foundOrder = Order.findOne({where: {id: order.id}});
     
     const products = await foundOrder.getProducts();
     if (!products.length) {
