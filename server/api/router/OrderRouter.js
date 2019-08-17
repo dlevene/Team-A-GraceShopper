@@ -19,10 +19,11 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res, next) => {
   try {
     const orderProducts = req.body.orderProducts;
+    console.log(orderProducts);
     const userId = req.session.userId;
     const cart = await Order.addUpdateCart(orderProducts, userId);
     res.json(cart);
-    console.log('Order updated successfully:', cart.order.id, 'Total:', cart.order.orderTotal);
+  //   console.log('Order updated successfully:', cart.order.id, 'Total:', cart.order.orderTotal);
   } catch (error) {
     console.error(error);
   }

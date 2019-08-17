@@ -6,6 +6,7 @@ const ORDER_REQUEST_FAILURE = 'ORDER_REQUEST_FAILURE';
 const GET_ORDER = 'GET_ORDER';
 const GET_ORDERS = 'GET_ORDERS';
 const CHECKOUT = 'CHECKOUT';
+const UPDATE_CARTLEN = 'UPDATE_CARTLEN';
 
 // Action Creators
 const fetchingOrderData = () => ({
@@ -35,11 +36,17 @@ const postCheckout = (orderDetails) => ({
   orderDetails,
 })
 
+const updateCartLen = (length) => ({
+  type: UPDATE_CARTLEN,
+  length,
+})
+
 // Thunks
 export const postOrder = order => dispatch => {
     axios.post('/api/orders', order)
     .then(({ data }) => {
       dispatch(getOrder(data));
+      dispatch(updateCartLen(data.cartLen));
     })
     .catch(error => console.log(error))
 }
@@ -83,7 +90,8 @@ const initialState = {
     orders: [],
 		order: {},
 		carts: [],
-		cart: {},
+    cart: {},
+    cartLen: 0,
     isFetching: false,
 }
 
@@ -103,7 +111,9 @@ const orders = (state = initialState, action) => {
 				} else {
 					return { ...state, order: action.order, isFetching: false };
           }
-      case CHECKOUT:
+      case UPDATE_CARTLEN:
+        return {...state, cartLen: action.length};
+          case CHECKOUT:
         return {...state, cart: {}};
       default:
         return state;

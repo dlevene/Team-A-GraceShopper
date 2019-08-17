@@ -100,8 +100,7 @@ const SPVFunctional = props => {
               color="secondary"
               aria-label="add"
               onClick={() => {
-                addToCart(product);
-                console.log('Added to cart'); //add product to cart
+                addToCart({orderProducts: [{product, quantity: 1}]});
               }}
             >
               <AddIcon />

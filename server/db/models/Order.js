@@ -25,12 +25,11 @@ const Order = db.define('order', {
 });
 
 Order.addUpdateCart = async function(orderProducts, userId) {
+  const productObj = orderProducts[0];
   try {
     const [order] = await Order.findOrCreate({where: {userId, status: PENDING} });
 
     let tempOrderTotal = order.orderTotal;
-
-    const productObj = orderProducts[0];
 
     const { product, quantity } = productObj;
     const Product = db.models.product;
@@ -51,7 +50,11 @@ Order.addUpdateCart = async function(orderProducts, userId) {
     const updatedOrder = await order.update({ orderTotal: tempOrderTotal });
 
     const orderProducts = await OrderProduct.findAll({where: {orderId: updatedOrder.id}});
-    const cartLen = orderProducts.length;
+    const cartLen = orderProducts.reduce((quantity, product) => {
+      console.log(product);
+      quantity += product.productQuantity;
+      return quantity;
+    }, 0);
     let cart = {};
     cart.orderProducts = orderProducts;
     cart.cartLen = cartLen;
